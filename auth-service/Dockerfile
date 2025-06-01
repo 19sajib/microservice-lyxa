@@ -1,53 +1,35 @@
-# Build stage
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS development
 
-WORKDIR /app
+# Set the working directory in the container
+WORKDIR /usr/src/app
 
-# Copy package files
+# Copy package.json and package-lock.json (or yarn.lock)
+# to leverage Docker's layer caching for dependencies
 COPY package*.json ./
-COPY tsconfig*.json ./
-COPY nest-cli.json ./
 
 # Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install
 
-# Copy source code
-COPY src/ ./src/
+# Copy the rest of the application source code
+COPY . .
 
-# Build the application
+# Build the NestJS application
 RUN npm run build
 
-# Production stage
-FROM node:18-alpine AS production
+# --- Production Stage ---
+FROM node:20-alpine AS production
 
-WORKDIR /app
+WORKDIR /usr/src/app
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Copy only production dependencies from the development stage
+COPY --from=development /usr/src/app/node_modules ./node_modules
+# Copy the built application code from the development stage
+COPY --from=development /usr/src/app/dist ./dist
+# Copy package.json to run the start script
+COPY --from=development /usr/src/app/package.json ./package.json
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nestjs -u 1001
+# Expose the port the NestJS application listens on
+EXPOSE 3000
 
-# Copy package files and install production dependencies
-COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
-
-# Copy built application from builder stage
-COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
-
-# Change to non-root user
-USER nestjs
-
-# Expose port
-EXPOSE 3001
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node dist/health-check.js
-
-# Use dumb-init to handle signals properly
-ENTRYPOINT ["dumb-init", "--"]
-
-# Start the application
-CMD ["node", "dist/main.js"]
+# Set the command to run the application
+CMD ["node", "dist/main"]

@@ -1,65 +1,44 @@
 version: '3.8'
 
 services:
-  auth-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
-    ports:
-      - "3001:3001"
-    environment:
-      - NODE_ENV=production
-      - PORT=3001
-      - MONGODB_URI=mongodb://mongodb:27017/auth-service
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
-      - JWT_ACCESS_SECRET=production-access-secret-change-me
-      - JWT_REFRESH_SECRET=production-refresh-secret-change-me
-    depends_on:
-      - mongodb
-      - rabbitmq
-    networks:
-      - auth-network
-    restart: unless-stopped
-    volumes:
-      - ./logs:/app/logs
-
   mongodb:
-    image: mongo:7.0-jammy
+    image: mongo:latest 
+    container_name: auth_mongodb
     ports:
-      - "27017:27017"
-    environment:
-      - MONGO_INITDB_DATABASE=auth-service
+      - "27018:27018"
     volumes:
       - mongodb_data:/data/db
-      - ./mongo-init:/docker-entrypoint-initdb.d
-    networks:
-      - auth-network
-    restart: unless-stopped
+    restart: always 
 
   rabbitmq:
-    image: rabbitmq:3.12-management-alpine
+    image: rabbitmq:3-management-alpine # Use RabbitMQ with management plugin
+    container_name: auth_rabbitmq
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "5672:5672" # AMQP protocol port
+      - "15672:15672" # Management UI port
     environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    networks:
-      - auth-network
-    restart: unless-stopped
-    healthcheck:
-      test: rabbitmq-diagnostics -q ping
-      interval: 30s
-      timeout: 30s
-      retries: 3
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    restart: always
 
-networks:
-  auth-network:
-    driver: bridge
+  auth-service:
+    build:
+      context: . # Build from the current directory (where Dockerfile is located)
+      dockerfile: Dockerfile
+    container_name: auth_service
+    ports:
+      - "3003:3003"
+    environment:
+      PORT: 3003
+      MONGODB_URI: mongodb://mongodb:27017/auth_service
+      RABBITMQ_URI: amqp://rabbitmq:5672
+      JWT_SECRET: supersecretjwtkey 
+      JWT_ACCESS_TOKEN_EXPIRATION_TIME: 3600
+      JWT_REFRESH_TOKEN_EXPIRATION_TIME: 604800
+    depends_on:
+      - mongodb 
+      - rabbitmq 
+    restart: always
 
 volumes:
   mongodb_data:
-  rabbitmq_data:
