@@ -49,7 +49,9 @@ docker-compose down
 
 ### Services will be available at:
 - **Auth Service**: http://localhost:3003
+- **Auth Service Swagger Docs**: http://localhost:3003/api/docs
 - **Product Service**: http://localhost:3001
+- **Product Service Swagger Docs**: http://localhost:3001/api/docs
 - **RabbitMQ Management**: http://localhost:15672 (user/password)
 - **MongoDB**: mongodb://localhost:27017
 
