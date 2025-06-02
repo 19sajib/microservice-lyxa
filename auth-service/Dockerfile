@@ -1,35 +1,23 @@
-FROM node:20-alpine AS development
+# Use the official Node.js 20.9.0 image as the base image
+FROM node:20.9.0
 
 # Set the working directory in the container
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Copy package.json and package-lock.json (or yarn.lock)
-# to leverage Docker's layer caching for dependencies
+# Copy the package.json and package-lock.json (if available) to the working directory
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install the dependencies
+RUN npm install --legacy-peer-deps
 
-# Copy the rest of the application source code
+# Copy the rest of the application code to the working directory
 COPY . .
 
 # Build the NestJS application
 RUN npm run build
 
-# --- Production Stage ---
-FROM node:20-alpine AS production
-
-WORKDIR /usr/src/app
-
-# Copy only production dependencies from the development stage
-COPY --from=development /usr/src/app/node_modules ./node_modules
-# Copy the built application code from the development stage
-COPY --from=development /usr/src/app/dist ./dist
-# Copy package.json to run the start script
-COPY --from=development /usr/src/app/package.json ./package.json
-
-# Expose the port the NestJS application listens on
+# Expose the port the app runs on
 EXPOSE 3000
 
-# Set the command to run the application
-CMD ["node", "dist/main"]
+# Start the NestJS application
+CMD ["npm", "run", "start:dev"]

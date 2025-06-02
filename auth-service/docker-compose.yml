@@ -5,13 +5,15 @@ services:
     image: mongo:latest 
     container_name: auth_mongodb
     ports:
-      - "27018:27018"
+      - "27017:27017"
     volumes:
       - mongodb_data:/data/db
     restart: always 
+    networks:
+      - lyxa_network
 
   rabbitmq:
-    image: rabbitmq:3-management-alpine # Use RabbitMQ with management plugin
+    image: rabbitmq:3-management-alpine
     container_name: auth_rabbitmq
     ports:
       - "5672:5672" # AMQP protocol port
@@ -20,10 +22,12 @@ services:
       RABBITMQ_DEFAULT_USER: user
       RABBITMQ_DEFAULT_PASS: password
     restart: always
+    networks:
+      - lyxa_network
 
   auth-service:
     build:
-      context: . # Build from the current directory (where Dockerfile is located)
+      context: .
       dockerfile: Dockerfile
     container_name: auth_service
     ports:
@@ -31,7 +35,7 @@ services:
     environment:
       PORT: 3003
       MONGODB_URI: mongodb://mongodb:27017/auth_service
-      RABBITMQ_URI: amqp://rabbitmq:5672
+      RABBITMQ_URI: amqp://user:password@rabbitmq:5672
       JWT_SECRET: supersecretjwtkey 
       JWT_ACCESS_TOKEN_EXPIRATION_TIME: 3600
       JWT_REFRESH_TOKEN_EXPIRATION_TIME: 604800
@@ -39,6 +43,12 @@ services:
       - mongodb 
       - rabbitmq 
     restart: always
+    networks:
+      - lyxa_network
+
+networks:
+  lyxa_network:
+    driver: bridge
 
 volumes:
   mongodb_data:
