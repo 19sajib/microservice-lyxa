@@ -1,5 +1,5 @@
-import { Controller, Logger } from '@nestjs/common';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { Controller, Inject, Logger } from '@nestjs/common';
+import { ClientProxy, MessagePattern, Payload } from '@nestjs/microservices';
 import { AuthService } from './auth.service';
 import { VALIDATE_TOKEN_PATTERN } from '../../common/constant';
 import { IJwtPayload } from './dto/jwt-payload.dto'
@@ -9,7 +9,7 @@ import { RpcException } from '@nestjs/microservices';
 export class AuthGateway {
   private readonly logger = new Logger(AuthGateway.name);
 
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService, @Inject('AUTH_SERVICE') private readonly client: ClientProxy) {}
 
   @MessagePattern(VALIDATE_TOKEN_PATTERN)
   async validateToken(@Payload() data: { token: string }): Promise<IJwtPayload> {

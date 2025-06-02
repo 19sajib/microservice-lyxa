@@ -19,7 +19,7 @@ export class RmqModule {
               transport: Transport.RMQ,
               options: {
                 urls: [configService.get<string>('RABBITMQ_URI')],
-                queue: name, // Queue name for this client
+                queue: 'auth_queue', // Queue name for this client
                 queueOptions: {
                   durable: false,
                 },
