@@ -28,7 +28,7 @@ import { AUTH_SERVICE } from '../../common/constant';
       name: AUTH_SERVICE,
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, AuthGateway],
   providers: [AuthService, JwtStrategy, AuthGateway], 
   exports: [AuthService],
 })
